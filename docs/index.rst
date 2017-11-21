@@ -14,8 +14,9 @@ Contents:
 
 .. noqa
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 5
 
+   packages
    autorelease-builds
    distribution-job-builds
-   packages
+   versioning

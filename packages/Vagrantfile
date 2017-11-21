@@ -1,0 +1,86 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Vagrantfile API/syntax version.
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  # Configure VM RAM and CPU for VirtualBox. Change this to meet your needs.
+  config.vm.provider :virtualbox do |virtualbox, override|
+    virtualbox.memory = 2048
+    virtualbox.cpus = 2
+  end
+
+  # Configure VM RAM and CPU for LibVirt. Change this to meet your needs.
+  config.vm.provider :libvirt do |libvirt, override|
+    libvirt.memory = 2048
+    libvirt.cpus = 2
+  end
+
+  # NFS is fragile, use rsync
+  config.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
+  config.vm.synced_folder ".", "/vagrant", type: "rsync",
+    rsync__exclude: [".git/", "*.rpm", "*.tar.gz", "*.zip", "karaf-*",
+                    "distribution-karaf-*"]
+
+  # Define RPM build env
+  config.vm.define :centos do |centos|
+    # Build Vagrant box based on CentOS 7
+    centos.vm.box = "centos/7"
+
+    # TODO: This doesn't work
+    centos.vm.provider "docker" do |docker, override|
+      docker.build_dir = "rpm"
+      docker.remains_running = false
+      override.vm.synced_folder ".", "/build"
+    end
+
+    # Add EPEL for access to fedora-packager and maybe others
+    centos.vm.provision "shell", inline: "yum install -y epel-release"
+
+    # Install required software
+    # fedora-packager: Basic RPM packaging software
+    centos.vm.provision "shell", inline: "yum install -y fedora-packager \
+                                                         python-pip"
+
+    # Use the distribution's version of pip to upgrade to the latest pip
+    centos.vm.provision "shell", inline: "pip install --upgrade pip"
+
+    # Install Python dependences system-wide via pip.
+    centos.vm.provision "shell", inline: "pip install -r /vagrant/requirements.txt"
+
+    # Add vagrant user to mock group for rpmbuild
+    centos.vm.provision "shell", inline: "sudo usermod -a -G mock vagrant"
+  end
+
+  # Define .deb build env
+  config.vm.define :debian do |debian|
+    # Build Vagrant box based on Debian 9
+    debian.vm.box = "debian/stretch64"
+
+    # TODO: This doesn't work
+    debian.vm.provider "docker" do |docker, override|
+      docker.build_dir = "deb"
+      docker.remains_running = false
+      override.vm.synced_folder ".", "/build"
+    end
+
+    # Update package info to prevent old info from causing 404s during install
+    debian.vm.provision "shell", inline: "apt-get update"
+
+    # Install pkg dev tools, Python libs for build scripts, gdebi to test install
+    debian.vm.provision "shell", inline: "apt-get install -y build-essential \
+                                                             devscripts \
+                                                             equivs \
+                                                             dh-systemd \
+                                                             git \
+                                                             python-pip \
+                                                             gdebi"
+
+    # Use the distribution's version of pip to upgrade to the latest pip
+    debian.vm.provision "shell", inline: "pip install --upgrade pip"
+
+    # Install Python dependences system-wide via pip
+    debian.vm.provision "shell", inline: "pip install -r /vagrant/requirements.txt"
+  end
+end

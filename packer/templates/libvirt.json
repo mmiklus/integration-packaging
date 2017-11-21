@@ -5,7 +5,6 @@
         "os_version": null,
         "iso_urls": null,
         "iso_checksum": null,
-        "rpm_repo_file": null,
         "rpm_repo_url": null
     },
     "builders": [
@@ -14,6 +13,7 @@
             "iso_urls": "{{ user `iso_urls` }}",
             "iso_checksum": "{{ user `iso_checksum` }}",
             "iso_checksum_type": "sha256",
+            "headless": "true",
             "ssh_username": "vagrant",
             "ssh_password": "vagrant",
             "ssh_wait_timeout": "60m",
@@ -30,7 +30,7 @@
             "scripts": [
                 "provision/config_vagrant.sh",
                 "provision/config_ansible_{{ user `os_name`}}.sh",
-                "provision/config_ssh.sh",
+                "provision/update_{{ user `os_name`}}.sh",
                 "provision/cleanup_{{ user `os_name`}}.sh",
                 "provision/minimize.sh"
             ]
@@ -40,8 +40,7 @@
             "playbook_file": "provision/install_odl.yml",
             "extra_arguments": [
                 "--extra-vars",
-                "\"rpm_repo_file={{ user `rpm_repo_file` }}",
-                "rpm_repo_url={{ user `rpm_repo_url` }}\""
+                "\"rpm_repo_url={{ user `rpm_repo_url` }}\""
             ]
         }
     ],

@@ -22,3 +22,10 @@ report.html
 
 # Ansible
 *.retry
+
+# Archives
+*.tar.gz
+*.zip
+
+# Other
+packages/deb/opendaylight/*
